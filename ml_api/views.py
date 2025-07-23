@@ -1141,14 +1141,25 @@ class HikrobotCameraManager:
             pData = (ctypes.c_ubyte * nPayloadSize)()
             stFrameInfo = MV_FRAME_OUT_INFO_EX()
             
-            # Get frame with appropriate timeout (longer for trigger mode)
-            timeout_ms = 3000 if self.is_trigger_mode else 1000
+            # Get frame with appropriate timeout and better error handling
+            timeout_ms = 100  # Short timeout for free-running mode
+            
+            # In trigger mode, don't try to get frames for streaming
+            if self.is_trigger_mode:
+                logger.debug("🎯 Camera in trigger mode - no frames available for streaming")
+                return None
+            
             ret = self.camera.MV_CC_GetOneFrameTimeout(pData, nPayloadSize, stFrameInfo, timeout_ms)
             if ret != 0:
-                if ret == -2147483612:  # Timeout error
-                    logger.debug("⏱️ Frame timeout (normal in trigger mode)")
+                # Common Hikrobot error codes
+                if ret == -2147483612:  # MV_E_TIMEOUT
+                    logger.debug("⏱️ Frame timeout (normal when no frames available)")
+                elif ret == 2147483655:  # MV_E_NOENOUGH_BUF or similar buffer error
+                    logger.debug("📦 Buffer error (normal in trigger mode)")
+                elif ret == -2147483634:  # Device not ready
+                    logger.debug("📷 Device not ready")
                 else:
-                    logger.error(f"❌ Failed to get frame. Error: {ret}")
+                    logger.debug(f"⚠️ Frame not available. Error: {ret}")
                 return None
             
             # Convert to numpy array
@@ -1365,27 +1376,51 @@ def capture_photo(request):
 
 
 def generate_frames():
-    """Generate frames for video streaming"""
+    """Generate frames for video streaming with trigger mode awareness"""
     while True:
         if camera_manager.is_connected and camera_manager.is_streaming:
-            frame = camera_manager.get_frame()
-            if frame is not None:
-                # Encode frame as JPEG
-                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+            # In trigger mode, show appropriate message
+            if camera_manager.is_trigger_mode:
+                # Show trigger mode status
+                placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
+                
+                # Add trigger mode info
+                cv2.putText(placeholder, 'TRIGGER MODE ACTIVE', (180, 200), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                cv2.putText(placeholder, 'Waiting for Line 0 signal...', (150, 240), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 215, 255), 2)
+                
+                if camera_manager.trigger_count > 0:
+                    cv2.putText(placeholder, f'Triggers: {camera_manager.trigger_count}', (250, 280), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                
+                _, buffer = cv2.imencode('.jpg', placeholder, [cv2.IMWRITE_JPEG_QUALITY, 80])
                 frame_bytes = buffer.tobytes()
                 
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
             else:
-                # Send placeholder frame if no camera frame
-                placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
-                cv2.putText(placeholder, 'Waiting for trigger...', (250, 240), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 215, 255), 2)
-                _, buffer = cv2.imencode('.jpg', placeholder)
-                frame_bytes = buffer.tobytes()
-                
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                # Free-running mode - try to get actual frame
+                frame = camera_manager.get_frame()
+                if frame is not None:
+                    # Encode frame as JPEG
+                    _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                    frame_bytes = buffer.tobytes()
+                    
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+                else:
+                    # Send placeholder frame if no camera frame available
+                    placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
+                    cv2.putText(placeholder, 'MANUAL MODE', (220, 220), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(placeholder, 'No frame available', (190, 260), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 215, 255), 2)
+                    _, buffer = cv2.imencode('.jpg', placeholder)
+                    frame_bytes = buffer.tobytes()
+                    
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         else:
             # Send "disconnected" frame
             placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
@@ -1397,7 +1432,7 @@ def generate_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         
-        time.sleep(0.033)  # ~30 FPS
+        time.sleep(0.1)  # 10 FPS to reduce CPU usage
 
 
 def video_stream(request):

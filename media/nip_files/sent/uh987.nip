@@ -1,0 +1,27 @@
+{
+  "metadata": {
+    "qr_code": "uh987",
+    "timestamp": "2025-07-06T12:23:10.604937",
+    "generated_by": "Industrial_Nut_Detection_System",
+    "version": "1.0"
+  },
+  "inspection_results": {
+    "overall_status": "OK",
+    "individual_nuts": {
+      "nut1": "OK",
+      "nut2": "OK",
+      "nut3": "OK",
+      "nut4": "OK"
+    },
+    "summary": {
+      "nuts_ok": 4,
+      "nuts_ng": 0,
+      "total_nuts": 4
+    }
+  },
+  "processing_info": {
+    "inspection_datetime": "2025-07-06T06:53:10.589824+00:00",
+    "processing_time": 3.616731,
+    "user": "manish"
+  }
+}

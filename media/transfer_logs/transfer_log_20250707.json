@@ -1,0 +1,13 @@
+[
+  {
+    "timestamp": "2025-07-07T02:25:36.077297",
+    "qr_code": "jhbv45678",
+    "status": "failed",
+    "message": "Failed to send jhbv45678 after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.109:8888/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.109:8888/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\jhbv45678.nip"
+    }
+  }
+]

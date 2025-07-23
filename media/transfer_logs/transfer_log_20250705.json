@@ -1,0 +1,148 @@
+[
+  {
+    "timestamp": "2025-07-05T12:02:01.057077",
+    "qr_code": "test98",
+    "status": "failed",
+    "message": "Failed to send test98 after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\test98.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T12:02:50.801106",
+    "qr_code": "idn",
+    "status": "failed",
+    "message": "Failed to send idn after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\idn.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T12:13:05.057527",
+    "qr_code": "ikj09",
+    "status": "failed",
+    "message": "Failed to send ikj09 after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\ikj09.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T12:54:15.246683",
+    "qr_code": "jnh098",
+    "status": "failed",
+    "message": "Failed to send jnh098 after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\jnh098.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T13:04:47.312531",
+    "qr_code": "ujh9",
+    "status": "failed",
+    "message": "Failed to send ujh9 after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\ujh9.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T13:16:01.248033",
+    "qr_code": "ujhn098",
+    "status": "failed",
+    "message": "Failed to send ujhn098 after 3 attempts: All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Connection error - server unreachable at http://192.168.0.104:8080/receive_nip",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\ujhn098.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T13:54:03.827786",
+    "qr_code": "ujh87",
+    "status": "success",
+    "message": "Successfully processed ujh87: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received ujh87.nip",
+        "timestamp": "2025-07-05T13:53:54.694593"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\ujh87.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T13:55:12.921385",
+    "qr_code": "uh8",
+    "status": "success",
+    "message": "Successfully processed uh8: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received uh8.nip",
+        "timestamp": "2025-07-05T13:55:04.230201"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\uh8.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T14:08:28.282187",
+    "qr_code": "yh0987",
+    "status": "success",
+    "message": "Successfully processed yh0987: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received yh0987.nip",
+        "timestamp": "2025-07-05T14:08:19.609354"
+      },
+      "attempts": 3,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\yh0987.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T14:08:52.099579",
+    "qr_code": "yhn098",
+    "status": "success",
+    "message": "Successfully processed yhn098: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received yhn098.nip",
+        "timestamp": "2025-07-05T14:08:43.431623"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\yhn098.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-05T14:27:45.673599",
+    "qr_code": "ij0987",
+    "status": "success",
+    "message": "Successfully processed ij0987: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received ij0987.nip",
+        "timestamp": "2025-07-05T14:27:37.160819"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\ij0987.nip"
+    }
+  }
+]

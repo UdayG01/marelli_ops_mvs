@@ -1,0 +1,34 @@
+[
+  {
+    "timestamp": "2025-07-06T12:23:11.022782",
+    "qr_code": "uh987",
+    "status": "success",
+    "message": "Successfully processed uh987: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received uh987.nip",
+        "timestamp": "2025-07-06T12:23:00.188823"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\uh987.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-06T12:54:11.183209",
+    "qr_code": "ikjmn987",
+    "status": "success",
+    "message": "Successfully processed ikjmn987: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received ikjmn987.nip",
+        "timestamp": "2025-07-06T12:54:00.266681"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\ikjmn987.nip"
+    }
+  }
+]

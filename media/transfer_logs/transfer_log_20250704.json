@@ -1,0 +1,120 @@
+[
+  {
+    "timestamp": "2025-07-04T01:03:30.207457",
+    "qr_code": "TEST_QR_20250704_010329",
+    "status": "success",
+    "message": "Successfully processed TEST_QR_20250704_010329: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received TEST_QR_20250704_010329.nip",
+        "timestamp": "2025-07-04T01:03:38.053403"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\TEST_QR_20250704_010329.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T01:03:30.797117",
+    "qr_code": "TEST_QR_20250703_234021",
+    "status": "retry_success",
+    "message": "Retry successful after 1 attempts",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received TEST_QR_20250703_234021.nip",
+        "timestamp": "2025-07-04T01:03:38.740266"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\TEST_QR_20250703_234021.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T01:33:11.834888",
+    "qr_code": "TEST_QR_20250704_013311",
+    "status": "success",
+    "message": "Successfully processed TEST_QR_20250704_013311: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received TEST_QR_20250704_013311.nip",
+        "timestamp": "2025-07-04T01:33:19.714511"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\TEST_QR_20250704_013311.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T01:34:33.565678",
+    "qr_code": "testimage2",
+    "status": "success",
+    "message": "Successfully processed testimage2: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received testimage2.nip",
+        "timestamp": "2025-07-04T01:34:41.327465"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\testimage2.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T12:57:58.027827",
+    "qr_code": "image0",
+    "status": "success",
+    "message": "Successfully processed image0: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received image0.nip",
+        "timestamp": "2025-07-04T12:58:06.519408"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\image0.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T12:59:32.196087",
+    "qr_code": "test0",
+    "status": "success",
+    "message": "Successfully processed test0: .nip file sent and archived",
+    "details": {
+      "response": {
+        "status": "received",
+        "code": 200,
+        "message": "Successfully received test0.nip",
+        "timestamp": "2025-07-04T12:59:40.831255"
+      },
+      "attempts": 1,
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\sent\\test0.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T15:33:55.349852",
+    "qr_code": "vfre43",
+    "status": "failed",
+    "message": "Failed to send vfre43 after 3 attempts: All 3 attempts failed. Final error: Request timeout after 30 seconds",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Request timeout after 30 seconds",
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\vfre43.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-04T16:18:26.180458",
+    "qr_code": "1234098",
+    "status": "failed",
+    "message": "Failed to send 1234098 after 3 attempts: All 3 attempts failed. Final error: Request timeout after 30 seconds",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Request timeout after 30 seconds",
+      "file_path": "C:\\Users\\MANISH\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\1234098.nip"
+    }
+  }
+]

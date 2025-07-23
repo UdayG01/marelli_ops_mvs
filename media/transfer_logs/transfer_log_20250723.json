@@ -1,0 +1,24 @@
+[
+  {
+    "timestamp": "2025-07-23T16:46:23.285651",
+    "qr_code": "1512",
+    "status": "failed",
+    "message": "Failed to send 1512 after 3 attempts: All 3 attempts failed. Final error: Request timeout after 30 seconds",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Request timeout after 30 seconds",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\1512.nip"
+    }
+  },
+  {
+    "timestamp": "2025-07-23T16:49:39.943951",
+    "qr_code": "1523",
+    "status": "failed",
+    "message": "Failed to send 1523 after 3 attempts: All 3 attempts failed. Final error: Request timeout after 30 seconds",
+    "details": {
+      "attempts": 3,
+      "final_error": "All 3 attempts failed. Final error: Request timeout after 30 seconds",
+      "file_path": "C:\\Users\\manis\\Desktop\\NutdetectionBackend\\ml_backend\\media\\nip_files\\failed\\1523.nip"
+    }
+  }
+]

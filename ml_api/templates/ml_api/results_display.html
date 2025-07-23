@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inspection Results</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #333;
+            overflow: hidden;
+        }
+        
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        
+        .mini-header {
+            background: linear-gradient(45deg, #FF6B35, #F7931E);
+            color: white;
+            padding: 4px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .mini-header h1 {
+            font-size: 1.8rem;
+            margin: 0;
+        }
+        
+        .result-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .image-id {
+            font-size: 1.5rem;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        
+        .result-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .result-pass {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .result-fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .dashboard-link {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: background 0.3s ease;
+            margin-right: 10px;
+        }
+        
+        .dashboard-link:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .images-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            padding: 4px;
+        }
+
+        .image-container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-title {
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 600;
+            padding: 3px;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .image-frame {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .image-frame.results {
+            border-color: #4CAF50;
+            background: #f0f8f0;
+        }
+
+        .image-frame img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block !important;
+        }
+
+        .image-placeholder {
+            padding: 20px;
+            color: #666;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .mini-footer {
+            background: #f8f9fa;
+            padding: 3px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: #4CAF50;
+            border: 2px solid #4CAF50;
+        }
+        
+        .btn-override {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .verification-badge {
+            position: fixed;
+            top: 5px;
+            left: 5px;
+            background: #FF1744;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 9999;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 10000;
+        }
+        
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            min-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal h3 {
+            margin-bottom: 20px;
+            text-align: center;
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+        }
+        
+        .modal-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 0 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .modal-btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .modal-btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .modal-btn-secondary {
+            background: #666;
+            color: white;
+        }
+        
+        .status-buttons {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .status-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            margin: 0 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .status-btn-ok {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .status-btn-ng {
+            background: #f44336;
+            color: white;
+        }
+        
+        .error-message {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+        
+        .success-message {
+            color: green;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .status-info {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="verification-badge">
+        90% IMAGES
+    </div>
+    
+    <div class="container">
+        <div class="mini-header">
+            <h1>📊 Inspection Results</h1>
+            <div class="result-info">
+                <a href="{% if user.role == 'admin' %}{% url 'ml_api:simple_admin_dashboard' %}{% else %}{% url 'ml_api:simple_user_dashboard' %}{% endif %}" class="dashboard-link">📊 Dashboard</a>
+                <span class="image-id">{{ image_id }}</span>
+                <div class="result-badge {% if inspection.overall_result == 'PASS' %}result-pass{% else %}result-fail{% endif %}">
+                    {% if inspection.overall_result == 'PASS' %}✅ PASS{% else %}❌ FAIL{% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="images-grid">
+            <div class="image-container">
+                <div class="image-title">Original Image</div>
+                <div class="image-frame">
+                    <img src="/media/inspections/original/{{ inspection.filename }}" 
+                         alt="Original Image" 
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="image-placeholder" style="display: none;">
+                        📷 Original image not available
+                    </div>
+                </div>
+            </div>
+            
+            <div class="image-container">
+                <div class="image-title">Detection Results</div>
+                <div class="image-frame results">
+                    <img id="result-image" 
+                         alt="Detection Results">
+                    <div class="image-placeholder" id="result-placeholder">
+                        🔍 Loading result image...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mini-footer">
+            <a href="{% url 'ml_api:image_id_entry' %}" class="btn btn-primary">🔄 Next Inspection</a>
+            <button onclick="showOverrideModal()" class="btn btn-override">🔒 Override Status</button>
+        </div>
+    </div>
+
+    <!-- Override Authentication Modal -->
+    <div id="overrideModal" class="modal">
+        <div class="modal-content">
+            <h3>🔒 Override Authentication</h3>
+            <form id="overrideForm">
+                <div class="form-group">
+                    <label for="overrideUsername">Username:</label>
+                    <input type="text" id="overrideUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="overridePassword">Password:</label>
+                    <input type="password" id="overridePassword" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="modal-btn modal-btn-primary">Authenticate</button>
+                    <button type="button" onclick="closeOverrideModal()" class="modal-btn modal-btn-danger">Cancel</button>
+                </div>
+            </form>
+            <div id="overrideError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Status Change Modal -->
+    <div id="statusModal" class="modal">
+        <div class="modal-content">
+            <h3>🔄 Change Status</h3>
+            <div class="status-info">
+                <p>Current Status: <strong id="currentStatus">{% if inspection.overall_result == 'PASS' %}OK{% else %}NG{% endif %}</strong></p>
+                <p>Image ID: <strong>{{ image_id }}</strong></p>
+            </div>
+            <div class="status-buttons">
+                <button onclick="changeStatus('OK')" class="status-btn status-btn-ok">✅ Mark as OK</button>
+                <button onclick="changeStatus('NG')" class="status-btn status-btn-ng">❌ Mark as NG</button>
+            </div>
+            <div class="modal-buttons">
+                <button onclick="closeStatusModal()" class="modal-btn modal-btn-secondary">Cancel</button>
+            </div>
+            <div id="statusChangeResult"></div>
+        </div>
+    </div>
+
+    <script>
+    let currentUserRole = '';
+    let inspectionId = '';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const resultImg = document.getElementById('result-image');
+        const placeholder = document.getElementById('result-placeholder');
+        
+        {% if annotated_filename %}
+        const annotatedFilename = '{{ annotated_filename|escapejs }}';
+        
+        if (resultImg && annotatedFilename) {
+            const imagePath = '/media/inspections/results/' + annotatedFilename;
+            
+            resultImg.onload = function() {
+                this.style.display = 'block';
+                placeholder.style.display = 'none';
+            };
+            
+            resultImg.onerror = function() {
+                this.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.innerHTML = '🔍 Result image not available';
+            };
+            
+            resultImg.src = imagePath;
+        }
+        {% else %}
+        resultImg.style.display = 'none';
+        placeholder.style.display = 'block';
+        placeholder.innerHTML = '🔍 Result image not available';
+        {% endif %}
+    });
+
+    function showOverrideModal() {
+        document.getElementById('overrideModal').style.display = 'block';
+    }
+
+    function closeOverrideModal() {
+        document.getElementById('overrideModal').style.display = 'none';
+        document.getElementById('overrideError').style.display = 'none';
+        document.getElementById('overrideForm').reset();
+    }
+
+    function closeStatusModal() {
+        document.getElementById('statusModal').style.display = 'none';
+        document.getElementById('statusChangeResult').innerHTML = '';
+    }
+
+    document.getElementById('overrideForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('overrideUsername').value;
+        const password = document.getElementById('overridePassword').value;
+        
+        // Show loading
+        document.getElementById('overrideError').textContent = 'Authenticating...';
+        document.getElementById('overrideError').style.display = 'block';
+        document.getElementById('overrideError').style.color = 'blue';
+        
+        // Override authentication
+        fetch('/api/ml/override-auth/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                username: username,
+                password: password,
+                image_id: '{{ image_id }}'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                currentUserRole = data.user_role;
+                inspectionId = data.inspection_id;
+                closeOverrideModal();
+                
+                // Update current status in modal
+                document.getElementById('currentStatus').textContent = data.current_status;
+                document.getElementById('statusModal').style.display = 'block';
+            } else {
+                document.getElementById('overrideError').textContent = data.error;
+                document.getElementById('overrideError').style.display = 'block';
+                document.getElementById('overrideError').style.color = 'red';
+            }
+        })
+        .catch(error => {
+            document.getElementById('overrideError').textContent = 'Authentication failed: ' + error.message;
+            document.getElementById('overrideError').style.display = 'block';
+            document.getElementById('overrideError').style.color = 'red';
+        });
+    });
+
+    function changeStatus(newStatus) {
+        if (!inspectionId) {
+            alert('No inspection ID available');
+            return;
+        }
+        
+        if (confirm(`Are you sure you want to change status to ${newStatus}?`)) {
+            // Show loading
+            document.getElementById('statusChangeResult').innerHTML = 
+                '<div style="color: blue; text-align: center;">Updating status...</div>';
+            
+            fetch(`/api/ml/inspection/${inspectionId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('statusChangeResult').innerHTML = 
+                        `<div class="success-message">
+                            <div style="font-weight: bold;">✅ ${data.message}</div>
+                            <div style="font-size: 12px; margin-top: 5px;">Changed by: ${data.updated_by} (${data.user_role})</div>
+                            <div style="font-size: 11px; color: #666;">Timestamp: ${new Date().toLocaleString()}</div>
+                        </div>`;
+                    
+                    // Update the display
+                    document.getElementById('currentStatus').textContent = newStatus;
+                    
+                    // Update the badge on the page
+                    const badge = document.querySelector('.result-badge');
+                    if (newStatus === 'OK') {
+                        badge.className = 'result-badge result-pass';
+                        badge.innerHTML = '✅ PASS';
+                    } else {
+                        badge.className = 'result-badge result-fail';
+                        badge.innerHTML = '❌ FAIL';
+                    }
+                    
+                    // Close modal after 3 seconds
+                    setTimeout(() => {
+                        closeStatusModal();
+                    }, 3000);
+                } else {
+                    document.getElementById('statusChangeResult').innerHTML = 
+                        `<div class="error-message" style="display: block;">❌ ${data.error}</div>`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('statusChangeResult').innerHTML = 
+                    `<div class="error-message" style="display: block;">❌ Status change failed: ${error.message}</div>`;
+            });
+        }
+    }
+
+    // Close modals when clicking outside
+    window.onclick = function(event) {
+        const overrideModal = document.getElementById('overrideModal');
+        const statusModal = document.getElementById('statusModal');
+        
+        if (event.target === overrideModal) {
+            closeOverrideModal();
+        }
+        if (event.target === statusModal) {
+            closeStatusModal();
+        }
+    }
+    </script>
+
+</body>
+</html>

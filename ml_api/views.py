@@ -616,12 +616,17 @@ class HikrobotCameraManager:
             return False, f"Failed to disable trigger mode: {str(e)}"
     
     def _monitor_trigger_signal(self):
-        """Monitor trigger signal on Line 0 - based on input_trigger.py logic"""
+        """Monitor trigger signal on Line 0 with enhanced error handling and logging"""
         logger.info("🎯 Started monitoring trigger signal on Line 0")
+        logger.info("🎯 IMPORTANT: Line 0 triggers will now execute the FULL 'Capture & Process' workflow")
+        
+        consecutive_errors = 0
+        max_consecutive_errors = 10
         
         while not self.stop_monitoring.is_set() and self.is_monitoring_trigger:
             try:
                 if not self.is_connected or not self.is_trigger_mode:
+                    logger.warning("🎯 Camera disconnected or not in trigger mode, stopping monitoring")
                     break
                 
                 # Check for trigger signal by attempting to capture
@@ -632,19 +637,30 @@ class HikrobotCameraManager:
                     self.trigger_count += 1
                     self.last_trigger_time = datetime.now()
                     
+                    logger.info(f"🎯 ⚡ TRIGGER #{self.trigger_count} DETECTED at {self.last_trigger_time.strftime('%H:%M:%S')}")
+                    logger.info(f"🎯 ⚡ Initiating FULL workflow (same as 'Capture & Process' button)")
+                    
                     # Save triggered image and initiate processing
                     self._save_and_process_triggered_image(captured_frame)
                     
-                    logger.info(f"📸 Trigger #{self.trigger_count} captured at {self.last_trigger_time.strftime('%H:%M:%S')}")
+                    # Reset error counter on successful trigger
+                    consecutive_errors = 0
                 
                 # Small delay to prevent excessive CPU usage
                 time.sleep(0.01)  # 10ms
                 
             except Exception as e:
-                logger.error(f"Trigger monitoring error: {e}")
-                time.sleep(0.1)
+                consecutive_errors += 1
+                logger.error(f"Trigger monitoring error #{consecutive_errors}: {e}")
+                
+                if consecutive_errors >= max_consecutive_errors:
+                    logger.error(f"Too many consecutive errors ({consecutive_errors}), stopping trigger monitoring")
+                    break
+                
+                time.sleep(0.1)  # Longer delay on error
         
         logger.info("🎯 Stopped monitoring trigger signal")
+        self.is_monitoring_trigger = False
     
     def _capture_triggered_frame(self):
         """Capture frame when trigger signal is received"""
@@ -700,16 +716,17 @@ class HikrobotCameraManager:
             return None
     
     def _save_and_process_triggered_image(self, frame):
-        """Save triggered image and initiate processing"""
+        """Save triggered image and initiate the SAME processing workflow as 'Capture & Process' button"""
         try:
-            # Save the triggered image first
-            save_path = os.path.join(settings.MEDIA_ROOT, 'camera_captures', 'triggered')
-            os.makedirs(save_path, exist_ok=True)
+            # Save the triggered image to the same location as manual captures
+            original_dir = os.path.join(settings.MEDIA_ROOT, 'inspections', 'original')
+            os.makedirs(original_dir, exist_ok=True)
             
             # Generate filename with trigger count
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-            filename = f"trigger_{self.trigger_count:04d}_{timestamp}.jpg"
-            filepath = os.path.join(save_path, filename)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            trigger_image_id = f"TRIGGER_{self.trigger_count:04d}_{timestamp}"
+            filename = f"{trigger_image_id}_camera.jpg"
+            filepath = os.path.join(original_dir, filename)
             
             # Save image
             success = cv2.imwrite(filepath, frame)
@@ -717,10 +734,10 @@ class HikrobotCameraManager:
             if success:
                 logger.info(f"💾 Triggered image saved: {filename}")
                 
-                # Initiate processing in a separate thread to not block trigger monitoring
+                # Process using the EXACT SAME workflow as the manual "Capture & Process" button
                 processing_thread = threading.Thread(
-                    target=self._process_triggered_image_async,
-                    args=(filepath, timestamp),
+                    target=self._execute_full_capture_and_process_workflow,
+                    args=(filepath, filename, trigger_image_id),
                     daemon=True
                 )
                 processing_thread.start()
@@ -734,109 +751,209 @@ class HikrobotCameraManager:
             logger.error(f"Error saving triggered image: {e}")
             return None
     
-    def _process_triggered_image_async(self, image_path, timestamp):
-        """Process triggered image asynchronously using the same workflow as manual captures"""
+    def _execute_full_capture_and_process_workflow(self, image_path, filename, image_id):
+        """Execute the EXACT SAME workflow as the manual 'Capture & Process' button"""
         try:
-            logger.info(f"🔄 Starting processing for triggered image: {os.path.basename(image_path)}")
-            
-            # Generate a unique image ID for the triggered capture
-            trigger_image_id = f"TRIGGER_{self.trigger_count:04d}_{timestamp}"
+            logger.info(f"🔄 Starting FULL triggered workflow for: {image_id}")
             
             # Import the same processing function used by manual captures
             from .simple_auth_views import _process_with_yolov8_model
             
-            # Process with the same YOLOv8 pipeline as manual captures
-            start_time = datetime.now()
-            processing_result = _process_with_yolov8_model(image_path, trigger_image_id)
-            processing_time = (datetime.now() - start_time).total_seconds()
+            # Process with YOLOv8 model (SAME AS MANUAL CAPTURE)
+            processing_result = _process_with_yolov8_model(image_path, image_id)
             
-            if processing_result['success']:
-                detection_data = processing_result['data']
-                nut_results = detection_data['nut_results']
-                decision = detection_data['decision']
-                
-                # Log the same information as manual captures
-                present_count = decision['present_count']
-                missing_count = decision['missing_count']
-                overall_result = 'PASS' if missing_count == 0 else 'FAIL'
-                
-                logger.info(f"✅ Triggered image processing completed successfully")
-                logger.info(f"🎯 Results: {present_count} PRESENT, {missing_count} MISSING")
-                logger.info(f"🎯 Overall: {overall_result}")
-                logger.info(f"🎯 Processing time: {processing_time:.2f}s")
-                
-                # Save processing results in the same format as manual captures
-                results_path = os.path.join(settings.MEDIA_ROOT, 'camera_captures', 'processed')
-                os.makedirs(results_path, exist_ok=True)
-                
-                result_filename = f"result_trigger_{self.trigger_count:04d}_{timestamp}.json"
-                result_filepath = os.path.join(results_path, result_filename)
-                
-                # Save full processing result
-                full_result = {
-                    'trigger_info': {
-                        'trigger_count': self.trigger_count,
-                        'timestamp': timestamp,
-                        'image_id': trigger_image_id,
-                        'processed_at': datetime.now().isoformat()
-                    },
-                    'processing_result': processing_result,
-                    'summary': {
-                        'overall_result': overall_result,
-                        'present_count': present_count,
-                        'missing_count': missing_count,
-                        'processing_time': processing_time
-                    }
-                }
-                
-                with open(result_filepath, 'w') as f:
-                    json.dump(full_result, f, indent=2, default=str)
-                
-                logger.info(f"📋 Trigger processing result saved: {result_filename}")
-                
-                # Optionally save to database as well (like manual captures)
-                try:
-                    from .models import SimpleInspection
-                    from django.contrib.auth.models import AnonymousUser
-                    
-                    # Create a system user or use the first available user for triggered captures
-                    from django.contrib.auth import get_user_model
-                    User = get_user_model()
-                    system_user = User.objects.filter(username='system').first()
-                    if not system_user:
-                        system_user = User.objects.first()  # Use first available user
-                    
-                    if system_user:
-                        # Extract individual nut statuses
-                        nut_statuses = ['MISSING', 'MISSING', 'MISSING', 'MISSING']
-                        for nut_key in ['nut1', 'nut2', 'nut3', 'nut4']:
-                            if nut_key in nut_results and nut_results[nut_key]['status'] == 'PRESENT':
-                                nut_index = int(nut_key.replace('nut', '')) - 1
-                                nut_statuses[nut_index] = 'PRESENT'
-                        
-                        # Save to database
-                        inspection = SimpleInspection.objects.create(
-                            user=system_user,
-                            image_id=trigger_image_id,
-                            filename=os.path.basename(image_path),
-                            overall_result=overall_result,
-                            nut1_status=nut_statuses[0],
-                            nut2_status=nut_statuses[1],
-                            nut3_status=nut_statuses[2],
-                            nut4_status=nut_statuses[3],
-                            processing_time=processing_time
-                        )
-                        
-                        logger.info(f"📊 Triggered inspection saved to database: {inspection.id}")
-                        
-                except Exception as db_error:
-                    logger.warning(f"⚠️ Could not save triggered inspection to database: {db_error}")
-                
+            if not processing_result['success']:
+                logger.error(f"❌ YOLOv8 processing failed: {processing_result.get('error', 'Unknown error')}")
+                return
+            
+            # Extract results using the same business logic
+            detection_data = processing_result['data']
+            nut_results = detection_data['nut_results']
+            decision = detection_data['decision']
+            
+            # Use ML decision for counts (SAME AS MANUAL CAPTURE)
+            present_count = decision['present_count']
+            missing_count = decision['missing_count']
+            
+            logger.info(f"✅ Triggered ML Results - Present: {present_count}, Missing: {missing_count}")
+            
+            # Determine individual nut statuses based on ML results (SAME AS MANUAL CAPTURE)
+            nut_statuses = ['MISSING', 'MISSING', 'MISSING', 'MISSING']
+            
+            # Assign PRESENT status based on ML detection
+            for nut_key in ['nut1', 'nut2', 'nut3', 'nut4']:
+                if nut_key in nut_results and nut_results[nut_key]['status'] == 'PRESENT':
+                    nut_index = int(nut_key.replace('nut', '')) - 1
+                    nut_statuses[nut_index] = 'PRESENT'
+            
+            # Overall result based on ML decision
+            overall_result = 'PASS' if missing_count == 0 else 'FAIL'
+            
+            # Get a system user for triggered captures
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            
+            # Try to get a system user, fallback to first user, or create one
+            try:
+                system_user = User.objects.filter(username__in=['system', 'trigger', 'auto']).first()
+                if not system_user:
+                    system_user = User.objects.first()
+                if not system_user:
+                    # Create a system user if none exists
+                    system_user = User.objects.create_user(
+                        username='system',
+                        email='system@marelli.com',
+                        password='system123',
+                        role='user'
+                    )
+            except Exception as user_error:
+                logger.error(f"❌ Could not get/create system user: {user_error}")
+                return
+            
+            # Save to database (SAME AS MANUAL CAPTURE)
+            from .models import SimpleInspection
+            
+            inspection = SimpleInspection.objects.create(
+                user=system_user,
+                image_id=image_id,
+                filename=filename,
+                overall_result=overall_result,
+                nut1_status=nut_statuses[0],
+                nut2_status=nut_statuses[1],
+                nut3_status=nut_statuses[2],
+                nut4_status=nut_statuses[3],
+                processing_time=detection_data.get('processing_time', 0.0)
+            )
+            
+            logger.info(f"💾 Triggered inspection saved to database: {inspection.id}")
+            
+            # Get annotated image path (SAME AS MANUAL CAPTURE)
+            annotated_image_path = detection_data.get('annotated_image_path', '')
+            
+            if annotated_image_path and os.path.exists(annotated_image_path):
+                annotated_filename = os.path.basename(annotated_image_path)
             else:
-                logger.error(f"❌ Triggered image processing failed: {processing_result.get('error', 'Unknown error')}")
+                # Check for existing result files
+                results_dir = os.path.join(settings.MEDIA_ROOT, 'inspections', 'results')
+                import glob
+                pattern = f"{image_id}_*_result.jpg"
+                matching_files = glob.glob(os.path.join(results_dir, pattern))
+                
+                if matching_files:
+                    latest_file = max(matching_files, key=os.path.getctime)
+                    annotated_filename = os.path.basename(latest_file)
+                    annotated_image_path = latest_file
+                else:
+                    timestamp_new = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    annotated_filename = f"{image_id}_{timestamp_new}_result.jpg"
+                    annotated_image_path = os.path.join(results_dir, annotated_filename)
+            
+            # ============================================================================
+            # 🆕 ENHANCED FUNCTIONALITY - OK/NG STORAGE (SAME AS MANUAL CAPTURE)
+            # ============================================================================
+            
+            try:
+                # Import enhanced storage service
+                from .storage_service import EnhancedStorageService
+                
+                # Initialize storage service
+                storage_service = EnhancedStorageService()
+                
+                # Extract confidence scores for enhanced storage
+                confidence_scores = []
+                for nut_key in ['nut1', 'nut2', 'nut3', 'nut4']:
+                    if nut_key in nut_results:
+                        confidence_scores.append(nut_results[nut_key].get('confidence', 0.0))
+                
+                # Save to enhanced database with OK/NG organization
+                enhanced_inspection = storage_service.save_inspection_with_images(
+                    user=system_user,
+                    image_id=image_id,
+                    original_image_path=image_path,
+                    annotated_image_path=annotated_image_path,
+                    nuts_present=present_count,
+                    nuts_absent=missing_count,
+                    confidence_scores=confidence_scores,
+                    processing_time=detection_data.get('processing_time', 0.0)
+                )
+
+                if enhanced_inspection and enhanced_inspection.test_status == 'OK':
+                    logger.info(f"🎯 Triggered Status is OK - Initiating file transfer...")
+                    logger.info(f"   - QR Code: {enhanced_inspection.image_id}")
+                    logger.info(f"   - Inspection ID: {enhanced_inspection.id}")
+                    
+                    try:
+                        from .file_transfer_service import FileTransferService
+                        transfer_service = FileTransferService()
+                        
+                        success, message, details = transfer_service.process_ok_status_change(enhanced_inspection)
+                        
+                        if success:
+                            logger.info(f"✅ Triggered file transfer successful: {message}")
+                        else:
+                            logger.error(f"❌ Triggered file transfer failed: {message}")
+                            
+                    except Exception as e:
+                        logger.error(f"💥 Triggered file transfer error: {str(e)}")
+                
+                if enhanced_inspection:
+                    logger.info(f"🎯 Triggered enhanced storage: {enhanced_inspection.test_status} folder - {enhanced_inspection.id}")
+                    enhanced_storage_success = True
+                    enhanced_folder = enhanced_inspection.test_status
+                else:
+                    logger.warning("Triggered enhanced storage failed, continuing with existing workflow")
+                    enhanced_storage_success = False
+                    enhanced_folder = 'OK' if missing_count == 0 else 'NG'
+                    
+            except ImportError:
+                logger.warning("Enhanced storage service not available for triggered processing")
+                enhanced_storage_success = False
+                enhanced_folder = 'OK' if missing_count == 0 else 'NG'
+            except Exception as e:
+                logger.error(f"Triggered enhanced storage error: {e}")
+                enhanced_storage_success = False
+                enhanced_folder = 'OK' if missing_count == 0 else 'NG'
+            
+            # ============================================================================
+            # LOG COMPLETE RESULTS (SAME FORMAT AS MANUAL CAPTURE)
+            # ============================================================================
+            
+            logger.info(f"🎯 ✅ TRIGGERED WORKFLOW COMPLETED SUCCESSFULLY")
+            logger.info(f"🎯 Image ID: {image_id}")
+            logger.info(f"🎯 Overall Result: {overall_result}")
+            logger.info(f"🎯 Nuts Present: {present_count}, Missing: {missing_count}")
+            logger.info(f"🎯 Enhanced Storage: {enhanced_storage_success}")
+            logger.info(f"🎯 Storage Folder: {enhanced_folder}")
+            logger.info(f"🎯 Database ID: {inspection.id}")
+            
+            # Save summary result for potential UI integration
+            trigger_summary = {
+                'trigger_count': self.trigger_count,
+                'image_id': image_id,
+                'overall_result': overall_result,
+                'present_count': present_count,
+                'missing_count': missing_count,
+                'enhanced_storage': enhanced_storage_success,
+                'storage_folder': enhanced_folder,
+                'database_id': str(inspection.id),
+                'processed_at': datetime.now().isoformat(),
+                'file_transfer_attempted': enhanced_inspection and enhanced_inspection.test_status == 'OK' if enhanced_inspection else False
+            }
+            
+            # Save trigger summary
+            summary_path = os.path.join(settings.MEDIA_ROOT, 'camera_captures', 'trigger_summaries')
+            os.makedirs(summary_path, exist_ok=True)
+            
+            summary_filename = f"trigger_summary_{self.trigger_count:04d}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            summary_filepath = os.path.join(summary_path, summary_filename)
+            
+            with open(summary_filepath, 'w') as f:
+                json.dump(trigger_summary, f, indent=2, default=str)
+            
+            logger.info(f"📋 Triggered workflow summary saved: {summary_filename}")
                 
         except Exception as e:
-            logger.error(f"❌ Error processing triggered image: {e}")
+            logger.error(f"❌ Error in triggered workflow execution: {e}")
             import traceback
             logger.error(f"❌ Full traceback: {traceback.format_exc()}")
     
@@ -940,6 +1057,34 @@ class HikrobotCameraManager:
         except Exception as e:
             logger.error(f"❌ Manual capture override error: {str(e)}")
             return False, f"Manual capture override error: {str(e)}"
+    
+    def test_trigger_workflow_manually(self):
+        """Test the trigger workflow manually (for debugging purposes)"""
+        try:
+            logger.info("🧪 Testing trigger workflow manually...")
+            
+            if not self.is_connected:
+                return False, "Camera not connected"
+            
+            # Capture a frame manually
+            frame = self.get_frame()
+            if frame is None:
+                return False, "Failed to capture test frame"
+            
+            # Simulate a trigger event
+            self.trigger_count += 1
+            self.last_trigger_time = datetime.now()
+            
+            logger.info(f"🧪 Simulating trigger #{self.trigger_count} for testing")
+            
+            # Execute the same workflow as a real trigger
+            self._save_and_process_triggered_image(frame)
+            
+            return True, f"Test trigger workflow initiated successfully (trigger #{self.trigger_count})"
+            
+        except Exception as e:
+            logger.error(f"❌ Test trigger workflow error: {str(e)}")
+            return False, f"Test trigger workflow error: {str(e)}"
     
     def get_frame(self):
         """Get current frame from camera"""
@@ -1333,6 +1478,24 @@ def get_trigger_status(request):
     return JsonResponse({
         'success': True,
         'trigger_status': status_data
+    })
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def test_trigger_workflow(request):
+    """Test the trigger workflow manually (for debugging)"""
+    if not camera_manager.is_connected:
+        return JsonResponse({
+            'success': False,
+            'message': 'Camera not connected'
+        })
+    
+    success, message = camera_manager.test_trigger_workflow_manually()
+    return JsonResponse({
+        'success': success,
+        'message': message,
+        'trigger_count': camera_manager.trigger_count
     })
 
 

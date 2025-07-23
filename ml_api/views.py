@@ -958,13 +958,33 @@ class HikrobotCameraManager:
             logger.error(f"❌ Full traceback: {traceback.format_exc()}")
     
     def get_trigger_status(self):
-        """Get current trigger mode status"""
-        return {
+        """Get current trigger mode status with recent processing info"""
+        status = {
             'is_trigger_mode': self.is_trigger_mode,
             'is_monitoring': self.is_monitoring_trigger,
             'trigger_count': self.trigger_count,
             'last_trigger_time': self.last_trigger_time.isoformat() if self.last_trigger_time else None
         }
+        
+        # Add recent trigger processing info
+        try:
+            # Check for recent trigger summaries
+            summary_path = os.path.join(settings.MEDIA_ROOT, 'camera_captures', 'trigger_summaries')
+            if os.path.exists(summary_path):
+                summary_files = [f for f in os.listdir(summary_path) if f.endswith('.json')]
+                if summary_files:
+                    # Get most recent summary
+                    latest_summary_file = max(summary_files, key=lambda x: os.path.getctime(os.path.join(summary_path, x)))
+                    latest_summary_path = os.path.join(summary_path, latest_summary_file)
+                    
+                    with open(latest_summary_path, 'r') as f:
+                        import json
+                        latest_summary = json.load(f)
+                        status['latest_processing'] = latest_summary
+        except Exception as e:
+            logger.error(f"Error getting trigger processing info: {e}")
+        
+        return status
     
     def capture_manual_override(self, save_path=None):
         """Force manual capture even in trigger mode by temporarily switching modes"""
@@ -1479,6 +1499,57 @@ def get_trigger_status(request):
         'success': True,
         'trigger_status': status_data
     })
+
+
+@csrf_exempt  
+@require_http_methods(["GET"])
+def get_recent_trigger_results(request):
+    """Get recent trigger results for notification system"""
+    try:
+        from .models import SimpleInspection
+        
+        # Get recent triggered inspections (last 10, within last hour)
+        from datetime import datetime, timedelta
+        one_hour_ago = datetime.now() - timedelta(hours=1)
+        
+        recent_inspections = SimpleInspection.objects.filter(
+            image_id__startswith='TRIGGER_',
+            timestamp__gte=one_hour_ago
+        ).order_by('-timestamp')[:10]
+        
+        results = []
+        for inspection in recent_inspections:
+            results.append({
+                'id': inspection.id,
+                'image_id': inspection.image_id,
+                'overall_result': inspection.overall_result,
+                'present_count': sum([
+                    1 for status in [inspection.nut1_status, inspection.nut2_status, 
+                                   inspection.nut3_status, inspection.nut4_status] 
+                    if status == 'PRESENT'
+                ]),
+                'missing_count': sum([
+                    1 for status in [inspection.nut1_status, inspection.nut2_status,
+                                   inspection.nut3_status, inspection.nut4_status]
+                    if status == 'MISSING'  
+                ]),
+                'timestamp': inspection.timestamp.isoformat(),
+                'processing_time': inspection.processing_time
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'results': results,
+            'count': len(results)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting trigger results: {e}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e),
+            'results': []
+        })
 
 
 @csrf_exempt

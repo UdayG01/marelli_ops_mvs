@@ -48,7 +48,8 @@ from .views import (
     enable_trigger_mode,
     disable_trigger_mode,
     get_trigger_status,
-    test_trigger_workflow
+    test_trigger_workflow,
+    get_recent_trigger_results
 )
 
 app_name = 'ml_api'
@@ -116,6 +117,7 @@ urlpatterns = [
     path('camera/trigger/disable/', disable_trigger_mode, name='disable_trigger_mode'),
     path('camera/trigger/status/', get_trigger_status, name='get_trigger_status'),
     path('camera/trigger/test/', test_trigger_workflow, name='test_trigger_workflow'),
+    path('trigger/recent-results/', get_recent_trigger_results, name='get_recent_trigger_results'),
 
     
 ]

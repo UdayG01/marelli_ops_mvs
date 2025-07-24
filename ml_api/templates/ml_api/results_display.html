@@ -320,11 +320,104 @@
             background: #f8f9fa;
             border-radius: 5px;
         }
+        
+        /* Auto-redirect timer styles */
+        .auto-redirect-timer {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 107, 53, 0.95);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 9998;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .timer-icon {
+            font-size: 1.2rem;
+            animation: rotate 1s linear infinite;
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .timer-text {
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        
+        .timer-paused {
+            background: rgba(108, 117, 125, 0.95);
+            animation: none;
+        }
+        
+        .timer-paused .timer-icon {
+            animation: none;
+        }
+        
+        /* Auto-redirect timer styles */
+        .auto-redirect-timer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.95);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .auto-redirect-timer.paused {
+            background: rgba(108, 117, 125, 0.95);
+        }
+        
+        .timer-icon {
+            margin-right: 5px;
+            animation: pulse 1s infinite;
+        }
+        
+        .timer-paused .timer-icon {
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
     <div class="verification-badge">
         90% IMAGES
+    </div>
+    
+    <!-- Auto-redirect timer -->
+    <div id="autoRedirectTimer" class="auto-redirect-timer">
+        <span class="timer-icon">⏱️</span>
+        <span class="timer-text">Next: <span id="countdown">7</span>s</span>
+        <button onclick="pauseTimer()" id="pauseBtn" style="background: none; border: none; color: white; font-size: 0.8rem; cursor: pointer; margin-left: 5px;">⏸️</button>
     </div>
     
     <div class="container">
@@ -579,6 +672,67 @@
             closeStatusModal();
         }
     }
+
+    // Auto-redirect timer functionality
+    let countdownInterval;
+    let isPaused = false;
+    let timeLeft = 7;
+
+    function startTimer() {
+        const timerElement = document.getElementById('autoRedirectTimer');
+        const countdownElement = document.getElementById('countdown');
+        const pauseBtn = document.getElementById('pauseBtn');
+        
+        if (!timerElement) return;
+        
+        countdownInterval = setInterval(() => {
+            if (!isPaused) {
+                timeLeft--;
+                countdownElement.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    // Redirect to camera capture page
+                    window.location.href = '/camera-capture/';
+                }
+            }
+        }, 1000);
+    }
+
+    function pauseTimer() {
+        isPaused = !isPaused;
+        const timerElement = document.getElementById('autoRedirectTimer');
+        const pauseBtn = document.getElementById('pauseBtn');
+        
+        if (isPaused) {
+            timerElement.classList.add('paused');
+            pauseBtn.textContent = '▶️';
+            pauseBtn.title = 'Resume timer';
+        } else {
+            timerElement.classList.remove('paused');
+            pauseBtn.textContent = '⏸️';
+            pauseBtn.title = 'Pause timer';
+        }
+    }
+
+    // Start timer when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Start the timer after a brief delay
+        setTimeout(startTimer, 500);
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(event) {
+        if (event.code === 'Space') {
+            event.preventDefault();
+            pauseTimer();
+        } else if (event.code === 'Escape') {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                document.getElementById('autoRedirectTimer').style.display = 'none';
+            }
+        }
+    });
     </script>
 
 </body>

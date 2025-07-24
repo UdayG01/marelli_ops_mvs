@@ -484,23 +484,25 @@
                 const result = triggerStatus.latest_processing;
                 lastKnownProcessingId = result.database_id;
                 
-                // Hide processing overlay
-                document.getElementById('processingOverlay').style.display = 'none';
-                processingTrigger = false;
-                
                 // Show completion notification with result
                 const status = result.overall_result === 'PASS' ? '✅ PASS' : '❌ FAIL';
                 const nutSummary = `${result.present_count}/4 nuts present`;
                 
+                // Update processing message to show completion (SAME AS MANUAL)
+                document.getElementById('processingMessage').textContent = 'Processing completed successfully!';
+                
                 showNotification(`🎯 Trigger #${result.trigger_count} completed: ${status} (${nutSummary})`, 
                                result.overall_result === 'PASS' ? 'success' : 'error');
                 
-                // Auto-show results after a brief delay if user wants
+                // SAME PATTERN AS MANUAL CAPTURE - Hide overlay and redirect after delay
                 setTimeout(() => {
-                    if (confirm(`Line 0 Trigger results ready: ${status}\n${nutSummary}\n\nView detailed results?`)) {
-                        window.location.href = `/api/ml/results/?image_id=${result.image_id}`;
-                    }
-                }, 1500);
+                    // Hide overlay and redirect to results (SAME AS MANUAL)
+                    document.getElementById('processingOverlay').style.display = 'none';
+                    processingTrigger = false;
+                    
+                    // Direct redirect to results page (SAME AS MANUAL)
+                    window.location.href = `/api/ml/results/?image_id=${result.image_id}`;
+                }, 1000); // Same 1 second delay as manual capture
             }
             
             lastKnownTriggerTime = triggerStatus.last_trigger_time;
@@ -512,30 +514,44 @@
                 const response = await fetch('/api/ml/trigger/recent-results/');
                 const data = await response.json();
                 
+                // CHECK data.success SAME AS MANUAL CAPTURE
                 if (data.success && data.results.length > 0) {
                     const latestResult = data.results[0];
                     
-                    // Hide processing overlay
-                    document.getElementById('processingOverlay').style.display = 'none';
-                    processingTrigger = false;
-                    
                     // Show completion notification with result
                     const status = latestResult.overall_result === 'PASS' ? '✅ PASS' : '❌ FAIL';
+                    
+                    // Update processing message to show completion (SAME AS MANUAL)
+                    document.getElementById('processingMessage').textContent = 'Processing completed successfully!';
+                    
                     showNotification(`Trigger #${triggerNumber} processed: ${status} (${latestResult.present_count}/4 nuts)`, 
                                    latestResult.overall_result === 'PASS' ? 'success' : 'error');
                     
-                    // Optionally redirect to results or show inline
-                    if (confirm(`Line 0 Trigger results ready: ${status}\n\nView detailed results?`)) {
+                    // SAME PATTERN AS MANUAL CAPTURE - Hide overlay and redirect after delay
+                    setTimeout(() => {
+                        // Hide overlay and redirect to results (SAME AS MANUAL)
+                        document.getElementById('processingOverlay').style.display = 'none';
+                        processingTrigger = false;
+                        
+                        // Direct redirect to results page (SAME AS MANUAL)
                         window.location.href = `/api/ml/results/?image_id=${latestResult.image_id}`;
-                    }
+                    }, 1000); // Same 1 second delay as manual capture
+                    
+                } else if (data.success === false) {
+                    // Handle API error (SAME AS MANUAL)
+                    document.getElementById('processingOverlay').style.display = 'none';
+                    processingTrigger = false;
+                    showNotification(`Trigger processing failed: ${data.error || 'Unknown error'}`, 'error');
                 } else {
                     // Still processing, check again
                     setTimeout(() => checkForTriggerResults(triggerNumber), 2000);
                 }
             } catch (error) {
+                // Handle network/fetch error (SAME AS MANUAL)
                 console.error('Error checking trigger results:', error);
                 document.getElementById('processingOverlay').style.display = 'none';
                 processingTrigger = false;
+                showNotification(`Error: ${error.message}`, 'error');
             }
         }
 

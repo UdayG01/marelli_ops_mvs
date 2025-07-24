@@ -1379,8 +1379,8 @@ def generate_frames():
             else:
                 # Send placeholder frame if no camera frame
                 placeholder = np.zeros((480, 640, 3), dtype=np.uint8)
-                cv2.putText(placeholder, 'Waiting for trigger...', (250, 240), 
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 215, 255), 2)
+                cv2.putText(placeholder, 'No Signal', (250, 240), 
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
                 _, buffer = cv2.imencode('.jpg', placeholder)
                 frame_bytes = buffer.tobytes()
                 

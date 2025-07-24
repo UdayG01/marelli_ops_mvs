@@ -281,8 +281,13 @@
 <body>
     <div class="container">
         <div class="header">
+            {% if trigger_mode %}
+            <h1>🎯 Trigger Mode - Waiting for Line 0 Signal</h1>
+            <div class="image-id">Auto-generated Image ID will be created on trigger</div>
+            {% else %}
             <h1>📸 Camera Capture</h1>
             <div class="image-id">Image ID: {{ image_id }}</div>
+            {% endif %}
         </div>
 
         <div class="main-content">
@@ -306,6 +311,18 @@
                 </div>
 
                 <div class="control-group">
+                    {% if trigger_mode %}
+                    <h3>🎯 Trigger Mode Active</h3>
+                    <div style="text-align: center; padding: 20px; background: #e8f5e8; border-radius: 10px; color: #2c5530;">
+                        <div style="font-size: 1.2em; margin-bottom: 10px;">
+                            <span id="triggerStatusIndicator">⏳ Initializing...</span>
+                        </div>
+                        <div style="font-size: 0.9em;">System is monitoring for trigger events. Image will be captured and processed automatically.</div>
+                        <div id="triggerActivityLog" style="font-size: 0.8em; margin-top: 10px; color: #666;">
+                            <!-- Dynamic trigger activity will be shown here -->
+                        </div>
+                    </div>
+                    {% else %}
                     <h3>Capture Image</h3>
                     <button class="button capture-btn" id="captureBtn" onclick="captureAndProcess()" disabled>
                         Capture & Process
@@ -313,6 +330,7 @@
                     <div style="font-size: 0.9em; color: #666; margin-top: 10px; text-align: center;">
                         ⚡ Click to capture image and process automatically
                     </div>
+                    {% endif %}
                 </div>
 
                 <div class="control-group">
@@ -349,6 +367,7 @@
 
     <script>
         const imageId = '{{ image_id }}';
+        const triggerMode = '{{ trigger_mode }}' === 'True';
         let isConnected = false;
 
         // Initialize on page load
@@ -357,6 +376,12 @@
             connectCamera();
             // Check status every 3 seconds
             setInterval(refreshStatus, 3000);
+            
+            // If in trigger mode, wait for camera connection then enable trigger mode
+            if (triggerMode) {
+                console.log('🎯 Trigger mode detected - will enable after camera connection');
+                waitForCameraAndEnableTrigger();
+            }
         });
 
         // Utility functions
@@ -715,6 +740,117 @@
 
             } catch (error) {
                 showNotification(`🧪 Trigger test error: ${error.message}`, 'error');
+            }
+        }
+
+        // NEW: Function to continuously monitor for trigger results in trigger mode
+        function startTriggerResultPolling() {
+            console.log('🎯 Starting trigger result polling...');
+            
+            let lastResultTime = new Date(); // Track last seen result time
+            let processingResult = false; // Prevent multiple simultaneous processing
+            
+            // Check for trigger results every 1 second (more frequent for responsiveness)
+            const pollingInterval = setInterval(async () => {
+                if (!triggerMode || processingResult) return; // Only poll in trigger mode and not currently processing
+                
+                try {
+                    const response = await fetch('/api/ml/trigger/recent-results/');
+                    const data = await response.json();
+                    
+                    if (data.success && data.results.length > 0) {
+                        const latestResult = data.results[0];
+                        const resultTime = new Date(latestResult.timestamp);
+                        
+                        // Check if this is a NEW result (after our last check)
+                        if (resultTime > lastResultTime) {
+                            console.log('🎯 NEW trigger result detected:', latestResult.image_id);
+                            
+                            // Update last seen time
+                            lastResultTime = resultTime;
+                            
+                            // Set processing flag to prevent duplicate processing
+                            processingResult = true;
+                            
+                            // Update status indicators
+                            updateTriggerStatus('⚡ Trigger detected! Processing...');
+                            updateTriggerActivity(`Trigger captured: ${latestResult.image_id}`);
+                            
+                            // Show immediate notification
+                            showNotification(`🎯 Line 0 trigger captured! Processing ${latestResult.image_id}...`, 'info');
+                            
+                            // Show processing overlay with details
+                            document.getElementById('processingOverlay').style.display = 'flex';
+                            document.getElementById('processingMessage').textContent = `Processing triggered image: ${latestResult.image_id}`;
+                            
+                            // Wait 2 seconds for processing to complete, then redirect to results
+                            setTimeout(() => {
+                                console.log('🎯 Redirecting to results page for:', latestResult.image_id);
+                                updateTriggerActivity(`Redirecting to results: ${latestResult.image_id}`);
+                                // Clear the polling interval since we're leaving the page
+                                clearInterval(pollingInterval);
+                                // Redirect to results page
+                                window.location.href = `/api/ml/results/?image_id=${latestResult.image_id}`;
+                            }, 3000); // 3 seconds to allow processing to complete
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error polling trigger results:', error);
+                }
+            }, 1000); // Poll every 1 second for faster detection
+            
+            // Store interval ID for cleanup if needed
+            window.triggerPollingInterval = pollingInterval;
+        }
+
+        // NEW: Function to wait for camera connection before enabling trigger mode
+        function waitForCameraAndEnableTrigger() {
+            console.log('🎯 Waiting for camera connection to enable trigger mode...');
+            updateTriggerStatus('⏳ Waiting for camera connection...');
+            
+            const checkCameraAndEnable = () => {
+                if (isConnected) {
+                    console.log('✅ Camera connected - enabling trigger mode');
+                    updateTriggerStatus('🔄 Enabling trigger mode...');
+                    
+                    // Camera is connected, now enable trigger mode
+                    setTimeout(() => {
+                        enableTriggerMode();
+                        updateTriggerStatus('✅ Trigger mode enabled - monitoring Line 0');
+                        
+                        // Start result polling for trigger mode
+                        startTriggerResultPolling();
+                        updateTriggerActivity('Started monitoring for trigger events');
+                        
+                        // Show user that trigger mode is active
+                        showNotification('🎯 Trigger mode enabled - waiting for Line 0 signal', 'success');
+                    }, 1000); // Small delay to ensure trigger mode is properly set
+                } else {
+                    console.log('⏳ Camera not connected yet, waiting...');
+                    updateTriggerStatus('⏳ Camera not connected yet...');
+                    // Check again in 1 second
+                    setTimeout(checkCameraAndEnable, 1000);
+                }
+            };
+            
+            // Start checking
+            checkCameraAndEnable();
+        }
+
+        // Helper function to update trigger status indicator
+        function updateTriggerStatus(message) {
+            const indicator = document.getElementById('triggerStatusIndicator');
+            if (indicator) {
+                indicator.textContent = message;
+            }
+        }
+
+        // Helper function to update trigger activity log
+        function updateTriggerActivity(message) {
+            const log = document.getElementById('triggerActivityLog');
+            if (log) {
+                const timestamp = new Date().toLocaleTimeString();
+                log.innerHTML = `${timestamp}: ${message}`;
             }
         }
 

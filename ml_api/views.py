@@ -1549,8 +1549,8 @@ def get_recent_trigger_results(request):
         
         recent_inspections = SimpleInspection.objects.filter(
             image_id__startswith='TRIGGER_',
-            timestamp__gte=one_hour_ago
-        ).order_by('-timestamp')[:10]
+            created_at__gte=one_hour_ago
+        ).order_by('-created_at')[:10]
         
         results = []
         for inspection in recent_inspections:
@@ -1568,7 +1568,7 @@ def get_recent_trigger_results(request):
                                    inspection.nut3_status, inspection.nut4_status]
                     if status == 'MISSING'  
                 ]),
-                'timestamp': inspection.timestamp.isoformat(),
+                'timestamp': inspection.created_at.isoformat(),
                 'processing_time': inspection.processing_time
             })
         

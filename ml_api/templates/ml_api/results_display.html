@@ -692,8 +692,8 @@
                 
                 if (timeLeft <= 0) {
                     clearInterval(countdownInterval);
-                    // Redirect to camera capture page
-                    window.location.href = '/camera-capture/';
+                    // Redirect to trigger-ready camera capture page
+                    window.location.href = "{% url 'ml_api:camera_capture' %}?trigger_mode=1";
                 }
             }
         }, 1000);

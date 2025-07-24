@@ -476,10 +476,22 @@ def camera_capture_view(request):
     CAMERA CAPTURE PAGE - Integrated into workflow
     Shows live preview and capture button
     After capture -> automatically processes with ML model
+    ENHANCED: Support trigger mode without requiring image ID
     """
     # Get Image ID from query parameter
     image_id = request.GET.get('image_id', '')
+    trigger_mode = request.GET.get('trigger_mode', '0') == '1'
     
+    # Handle trigger mode - no image ID required
+    if trigger_mode:
+        print("🎯 Camera capture in trigger mode - waiting for Line 0 trigger")
+        context = {
+            'image_id': '',  # Empty for trigger mode
+            'trigger_mode': True,
+        }
+        return render(request, 'ml_api/camera_capture.html', context)
+    
+    # Handle manual mode - image ID required
     if not image_id:
         messages.error(request, 'No Image ID provided. Please start from Image ID entry.')
         return redirect('ml_api:image_id_entry')
@@ -494,14 +506,13 @@ def camera_capture_view(request):
     if SimpleInspection.objects.filter(image_id=image_id).exists():
         messages.error(request, f'Image ID "{image_id}" already exists. Please use a different ID.')
         return redirect('ml_api:image_id_entry')
-    
+
     context = {
         'image_id': image_id,
+        'trigger_mode': False,
     }
     
-    return render(request, 'ml_api/camera_capture.html', context)
-
-# ml_api/simple_auth_views.py - ENHANCED camera_capture_and_process function
+    return render(request, 'ml_api/camera_capture.html', context)# ml_api/simple_auth_views.py - ENHANCED camera_capture_and_process function
 # Replace your existing function with this enhanced version
 
 @csrf_exempt

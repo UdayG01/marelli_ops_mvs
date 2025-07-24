@@ -750,16 +750,57 @@
 
         // NEW: Function to continuously monitor for trigger results in trigger mode
         function startTriggerResultPolling() {
-            console.log('🎯 Starting trigger result polling...');
+            if (!triggerMode) return;
+            
+            console.log('🎯 Starting trigger result polling for trigger mode');
             console.log('🎯 Session start time:', sessionStartTime.toISOString());
             
-            let lastResultTime = sessionStartTime; // Start from session time, not current time
-            let processingResult = false; // Prevent multiple simultaneous processing
-            let initialized = false; // Track if we've done initial setup
+            let latestKnownResultTime = null; // Track the latest result we know about
+            let initialized = false;
+            let processingResult = false;
             
-            // Check for trigger results every 1 second (more frequent for responsiveness)
+            updateTriggerStatus('⏳ Initializing trigger monitoring...');
+            updateTriggerActivity('Checking for existing triggers to ignore...');
+            
+            // STEP 1: Get the current latest result as our baseline (ignore anything before/equal to this)
+            const establishBaseline = async () => {
+                try {
+                    const response = await fetch('/api/ml/trigger/recent-results/');
+                    const data = await response.json();
+                    
+                    if (data.success && data.results.length > 0) {
+                        const currentLatest = data.results[0];
+                        latestKnownResultTime = new Date(currentLatest.timestamp);
+                        
+                        console.log('🎯 BASELINE ESTABLISHED - Ignoring all results at or before:', latestKnownResultTime.toISOString());
+                        console.log('🎯 Current latest result (IGNORED):', currentLatest.image_id);
+                        updateTriggerStatus('✅ Ready - waiting for NEW triggers only');
+                        updateTriggerActivity(`Baseline set: ignoring ${currentLatest.image_id} and older`);
+                    } else {
+                        // No existing results - use session start as baseline
+                        latestKnownResultTime = new Date(sessionStartTime.getTime() - 1000); // 1 second before session
+                        console.log('🎯 No existing results - ready for first trigger');
+                        updateTriggerStatus('✅ Ready for first Line 0 trigger');
+                        updateTriggerActivity('No existing triggers - waiting for first event');
+                    }
+                    
+                    initialized = true;
+                    console.log('🎯 Trigger monitoring FULLY INITIALIZED and ready');
+                } catch (error) {
+                    console.error('Error establishing baseline:', error);
+                    // Fall back to session start time
+                    latestKnownResultTime = new Date(sessionStartTime.getTime() - 1000);
+                    initialized = true;
+                    updateTriggerStatus('⚠️ Ready (with fallback baseline)');
+                }
+            };
+            
+            // Establish baseline first
+            establishBaseline();
+            
+            // STEP 2: Poll for NEW results every second
             const pollingInterval = setInterval(async () => {
-                if (!triggerMode || processingResult) return; // Only poll in trigger mode and not currently processing
+                if (!triggerMode || processingResult || !initialized) return;
                 
                 try {
                     const response = await fetch('/api/ml/trigger/recent-results/');
@@ -769,84 +810,48 @@
                         const latestResult = data.results[0];
                         const resultTime = new Date(latestResult.timestamp);
                         
-                        // Only consider results that are AFTER our session started
-                        if (resultTime <= sessionStartTime) {
-                            if (!initialized) {
-                                initialized = true;
-                                console.log('🎯 Found old triggers, ignoring - waiting for NEW triggers only');
-                                updateTriggerStatus('✅ Ready - waiting for NEW Line 0 triggers');
-                                updateTriggerActivity('Ignoring old triggers - waiting for new events');
-                            }
-                            return;
-                        }
-                        
-                        // On first run after session start, just record the latest time and don't process
-                        if (!initialized) {
-                            lastResultTime = resultTime;
-                            initialized = true;
-                            console.log('🎯 Initialized trigger polling - waiting for NEXT trigger only');
-                            updateTriggerStatus('✅ Monitoring for NEXT Line 0 trigger');
-                            updateTriggerActivity('Ready - waiting for next trigger event');
-                            return;
-                        }
-                        
-                        // Check if this is a NEW result (after our last check AND after session start)
-                        if (resultTime > lastResultTime && resultTime > sessionStartTime) {
-                            console.log('🎯 NEW trigger result detected:', latestResult.image_id);
-                            console.log('🎯 Trigger time:', resultTime.toISOString());
-                            console.log('🎯 Session start:', sessionStartTime.toISOString());
+                        // ONLY process if this result is NEWER than our known latest
+                        if (resultTime > latestKnownResultTime) {
+                            console.log('🎯 ⚡ NEW TRIGGER DETECTED!');
+                            console.log('🎯 NEW result:', latestResult.image_id, 'at', resultTime.toISOString());
+                            console.log('🎯 Previous latest:', latestKnownResultTime.toISOString());
                             
-                            // Update last seen time
-                            lastResultTime = resultTime;
-                            
-                            // Set processing flag to prevent duplicate processing
+                            // Update our latest known time
+                            latestKnownResultTime = resultTime;
                             processingResult = true;
                             
                             // Update status indicators
-                            updateTriggerStatus('⚡ Trigger detected! Processing...');
-                            updateTriggerActivity(`Trigger captured: ${latestResult.image_id}`);
+                            updateTriggerStatus('⚡ NEW TRIGGER! Processing...');
+                            updateTriggerActivity(`Processing NEW trigger: ${latestResult.image_id}`);
                             
-                            // Show immediate notification
-                            showNotification(`🎯 Line 0 trigger captured! Processing ${latestResult.image_id}...`, 'info');
+                            // Show notification
+                            showNotification(`🎯 NEW Line 0 trigger! Processing ${latestResult.image_id}...`, 'info');
                             
-                            // Show processing overlay with details
+                            // Show processing overlay
                             document.getElementById('processingOverlay').style.display = 'flex';
-                            document.getElementById('processingMessage').textContent = `Processing triggered image: ${latestResult.image_id}`;
+                            document.getElementById('processingMessage').textContent = `Processing NEW triggered image: ${latestResult.image_id}`;
                             
-                            // Wait 2 seconds for processing to complete, then redirect to results
+                            // Wait for processing and redirect
                             setTimeout(() => {
-                                console.log('🎯 Redirecting to results page for:', latestResult.image_id);
-                                updateTriggerActivity(`Redirecting to results: ${latestResult.image_id}`);
-                                // Clear the polling interval since we're leaving the page
+                                console.log('🎯 Redirecting to results for NEW trigger:', latestResult.image_id);
                                 clearInterval(pollingInterval);
-                                // Redirect to results page
                                 window.location.href = `/api/ml/results/?image_id=${latestResult.image_id}`;
-                            }, 3000); // 3 seconds to allow processing to complete
+                            }, 3000);
                         } else {
-                            // No new triggers, update status to show we're still waiting
-                            if (initialized) {
-                                updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
-                            }
-                        }
-                    } else {
-                        // No results yet, mark as initialized and show waiting status
-                        if (!initialized) {
-                            initialized = true;
-                            lastResultTime = sessionStartTime; // Use session start time
-                            console.log('🎯 No previous triggers found - ready for first trigger');
-                            updateTriggerStatus('✅ Ready for first Line 0 trigger');
-                            updateTriggerActivity('No previous triggers - waiting for first event');
-                        } else {
+                            // No new triggers - just update status silently
                             updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
                         }
+                    } else {
+                        // No results - update status
+                        updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
                     }
                 } catch (error) {
                     console.error('Error polling trigger results:', error);
                     updateTriggerStatus('⚠️ Polling error - retrying...');
                 }
-            }, 1000); // Poll every 1 second for faster detection
+            }, 1000);
             
-            // Store interval ID for cleanup if needed
+            // Store interval ID for cleanup
             window.triggerPollingInterval = pollingInterval;
         }
 

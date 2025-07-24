@@ -369,9 +369,14 @@
         const imageId = '{{ image_id }}';
         const triggerMode = '{{ trigger_mode }}' === 'True';
         let isConnected = false;
+        
+        // Store session start time to avoid processing old triggers
+        const sessionStartTime = new Date();
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Session started at:', sessionStartTime.toISOString());
+            
             // Auto-connect to camera
             connectCamera();
             // Check status every 3 seconds
@@ -746,9 +751,11 @@
         // NEW: Function to continuously monitor for trigger results in trigger mode
         function startTriggerResultPolling() {
             console.log('🎯 Starting trigger result polling...');
+            console.log('🎯 Session start time:', sessionStartTime.toISOString());
             
-            let lastResultTime = new Date(); // Track last seen result time
+            let lastResultTime = sessionStartTime; // Start from session time, not current time
             let processingResult = false; // Prevent multiple simultaneous processing
+            let initialized = false; // Track if we've done initial setup
             
             // Check for trigger results every 1 second (more frequent for responsiveness)
             const pollingInterval = setInterval(async () => {
@@ -762,9 +769,32 @@
                         const latestResult = data.results[0];
                         const resultTime = new Date(latestResult.timestamp);
                         
-                        // Check if this is a NEW result (after our last check)
-                        if (resultTime > lastResultTime) {
+                        // Only consider results that are AFTER our session started
+                        if (resultTime <= sessionStartTime) {
+                            if (!initialized) {
+                                initialized = true;
+                                console.log('🎯 Found old triggers, ignoring - waiting for NEW triggers only');
+                                updateTriggerStatus('✅ Ready - waiting for NEW Line 0 triggers');
+                                updateTriggerActivity('Ignoring old triggers - waiting for new events');
+                            }
+                            return;
+                        }
+                        
+                        // On first run after session start, just record the latest time and don't process
+                        if (!initialized) {
+                            lastResultTime = resultTime;
+                            initialized = true;
+                            console.log('🎯 Initialized trigger polling - waiting for NEXT trigger only');
+                            updateTriggerStatus('✅ Monitoring for NEXT Line 0 trigger');
+                            updateTriggerActivity('Ready - waiting for next trigger event');
+                            return;
+                        }
+                        
+                        // Check if this is a NEW result (after our last check AND after session start)
+                        if (resultTime > lastResultTime && resultTime > sessionStartTime) {
                             console.log('🎯 NEW trigger result detected:', latestResult.image_id);
+                            console.log('🎯 Trigger time:', resultTime.toISOString());
+                            console.log('🎯 Session start:', sessionStartTime.toISOString());
                             
                             // Update last seen time
                             lastResultTime = resultTime;
@@ -792,10 +822,27 @@
                                 // Redirect to results page
                                 window.location.href = `/api/ml/results/?image_id=${latestResult.image_id}`;
                             }, 3000); // 3 seconds to allow processing to complete
+                        } else {
+                            // No new triggers, update status to show we're still waiting
+                            if (initialized) {
+                                updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
+                            }
+                        }
+                    } else {
+                        // No results yet, mark as initialized and show waiting status
+                        if (!initialized) {
+                            initialized = true;
+                            lastResultTime = sessionStartTime; // Use session start time
+                            console.log('🎯 No previous triggers found - ready for first trigger');
+                            updateTriggerStatus('✅ Ready for first Line 0 trigger');
+                            updateTriggerActivity('No previous triggers - waiting for first event');
+                        } else {
+                            updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
                         }
                     }
                 } catch (error) {
                     console.error('Error polling trigger results:', error);
+                    updateTriggerStatus('⚠️ Polling error - retrying...');
                 }
             }, 1000); // Poll every 1 second for faster detection
             
@@ -818,9 +865,11 @@
                         enableTriggerMode();
                         updateTriggerStatus('✅ Trigger mode enabled - monitoring Line 0');
                         
-                        // Start result polling for trigger mode
-                        startTriggerResultPolling();
-                        updateTriggerActivity('Started monitoring for trigger events');
+                        // Start result polling for trigger mode with delay to ensure trigger mode is ready
+                        setTimeout(() => {
+                            startTriggerResultPolling();
+                            updateTriggerActivity('Started monitoring for trigger events');
+                        }, 2000); // 2 second delay before starting polling
                         
                         // Show user that trigger mode is active
                         showNotification('🎯 Trigger mode enabled - waiting for Line 0 signal', 'success');

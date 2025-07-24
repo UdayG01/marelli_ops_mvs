@@ -30,6 +30,8 @@ from .simple_auth_views import (
     test_file_transfer_system,
     # 🔒 NEW: Override authentication
     override_authentication_view,
+    # 🔧 DEBUG: CSRF test view
+    csrf_test_view,
 )
 
 # Keep your working detection endpoints
@@ -118,6 +120,7 @@ urlpatterns = [
     path('camera/trigger/status/', get_trigger_status, name='get_trigger_status'),
     path('camera/trigger/test/', test_trigger_workflow, name='test_trigger_workflow'),
     path('trigger/recent-results/', get_recent_trigger_results, name='get_recent_trigger_results'),
-
     
+    # 🔧 DEBUG ENDPOINTS
+    path('debug/csrf-test/', csrf_test_view, name='csrf_test'),
 ]

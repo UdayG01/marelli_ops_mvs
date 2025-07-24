@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSRF Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-form h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        input[type="text"], input[type="submit"] {
+            padding: 8px 12px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="submit"] {
+            background-color: #007cba;
+            color: white;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #005a87;
+        }
+        .info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .debug-info {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CSRF Test Page</h1>
+    
+    <div class="info">
+        <strong>Purpose:</strong> This page helps test if CSRF tokens are working properly in your Django application.
+    </div>
+
+    <div class="debug-info">
+        <strong>CSRF Token:</strong> {{ csrf_token }}<br>
+        <strong>Session Key:</strong> {{ request.session.session_key }}<br>
+        <strong>Method:</strong> {{ request.method }}<br>
+        <strong>POST Data:</strong> {{ request.POST }}
+    </div>
+
+    <!-- Test Form 1: Simple POST with CSRF token -->
+    <div class="test-form">
+        <h3>✅ Test 1: Form with CSRF Token (Should Work)</h3>
+        <form method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="test_type" value="with_csrf">
+            <input type="text" name="test_data" placeholder="Enter test data" required>
+            <input type="submit" value="Submit with CSRF">
+        </form>
+    </div>
+
+    <!-- Test Form 2: POST without CSRF token (will fail) -->
+    <div class="test-form">
+        <h3>❌ Test 2: Form without CSRF Token (Should Fail)</h3>
+        <form method="post" action="">
+            <input type="hidden" name="test_type" value="without_csrf">
+            <input type="text" name="test_data" placeholder="Enter test data" required>
+            <input type="submit" value="Submit without CSRF">
+        </form>
+    </div>
+
+    <!-- JavaScript Test -->
+    <div class="test-form">
+        <h3>🔧 Test 3: AJAX with CSRF Token</h3>
+        <button onclick="testAjax()">Test AJAX Request</button>
+        <div id="ajax-result"></div>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function testAjax() {
+            const csrftoken = getCookie('csrftoken');
+            const resultDiv = document.getElementById('ajax-result');
+            
+            fetch('', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrftoken,
+                },
+                body: 'test_type=ajax&test_data=ajax_test_data'
+            })
+            .then(response => {
+                if (response.ok) {
+                    resultDiv.innerHTML = '<span style="color: green;">✅ AJAX request successful!</span>';
+                } else {
+                    resultDiv.innerHTML = '<span style="color: red;">❌ AJAX request failed: ' + response.status + '</span>';
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '<span style="color: red;">❌ AJAX error: ' + error + '</span>';
+            });
+        }
+
+        // Show current CSRF token in console
+        console.log('CSRF Token:', getCookie('csrftoken'));
+    </script>
+
+    {% if request.method == 'POST' %}
+    <div class="test-form">
+        <h3>📊 Test Results</h3>
+        <div class="debug-info">
+            <strong>Test Type:</strong> {{ request.POST.test_type }}<br>
+            <strong>Test Data:</strong> {{ request.POST.test_data }}<br>
+            <strong>Status:</strong> 
+            {% if request.POST.test_type == 'with_csrf' %}
+                <span style="color: green;">✅ SUCCESS - CSRF token validated correctly!</span>
+            {% elif request.POST.test_type == 'without_csrf' %}
+                <span style="color: orange;">⚠️ This shouldn't work (but it did reach here somehow)</span>
+            {% elif request.POST.test_type == 'ajax' %}
+                <span style="color: blue;">🔧 AJAX request processed</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="info">
+        <strong>Instructions:</strong>
+        <ul>
+            <li>Test 1 should work normally</li>
+            <li>Test 2 should show a CSRF error (403 Forbidden)</li>
+            <li>Test 3 should work if AJAX CSRF headers are properly configured</li>
+        </ul>
+    </div>
+</body>
+</html>

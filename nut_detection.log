@@ -2684,3 +2684,33 @@ INFO 2025-07-23 19:15:59,094 services 26572 27336 Enhanced Industrial Nut Detect
 INFO 2025-07-23 19:42:10,535 services 29688 33376 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
 INFO 2025-07-23 19:42:10,537 services 29688 33376 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
 INFO 2025-07-23 19:42:10,537 services 29688 33376 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:52:33,883 services 2844 26904 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:52:33,886 services 2844 26904 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:52:33,887 services 2844 26904 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:56:55,093 services 12928 13676 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:56:55,093 services 12928 13676 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:56:55,093 services 12928 13676 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:57:04,176 services 1624 5476 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:57:04,177 services 1624 5476 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:57:04,177 services 1624 5476 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:57:36,642 services 15668 25520 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:57:36,642 services 15668 25520 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:57:36,643 services 15668 25520 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:58:32,003 services 13676 27108 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:58:32,004 services 13676 27108 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:58:32,004 services 13676 27108 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:59:16,107 services 6940 7456 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:59:16,107 services 6940 7456 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:59:16,107 services 6940 7456 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:59:24,122 services 4620 24560 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:59:24,123 services 4620 24560 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:59:24,123 services 4620 24560 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 15:59:50,950 services 10880 5828 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:59:50,950 services 10880 5828 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 15:59:50,951 services 10880 5828 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 16:00:03,908 services 24604 14412 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 16:00:03,909 services 24604 14412 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 16:00:03,909 services 24604 14412 Enhanced Industrial Nut Detection Service Initialized
+INFO 2025-07-24 16:01:07,931 services 17268 16956 Model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 16:01:07,931 services 17268 16956 YOLOv8 model loaded: C:\Work\Renata\Marelli\marelli_ops_mvs\models\industrial_nut_detection.pt
+INFO 2025-07-24 16:01:07,931 services 17268 16956 Enhanced Industrial Nut Detection Service Initialized

@@ -24,6 +24,16 @@ from django.http import JsonResponse
 from .file_transfer_service import FileTransferService
 from .models import CustomUser, SimpleInspection, InspectionRecord  # 🆕 Add InspectionRecord
 
+# CSRF Test View for debugging
+def csrf_test_view(request):
+    """Test page for debugging CSRF token issues"""
+    context = {
+        'csrf_token': request.META.get('CSRF_COOKIE'),
+        'session_key': request.session.session_key,
+        'post_data': dict(request.POST) if request.method == 'POST' else None,
+    }
+    return render(request, 'ml_api/csrf_test.html', context)
+
 
 # 🎯 PREDEFINED ADMIN ACCOUNTS - YOU CAN EDIT THIS SECTION
 PREDEFINED_ADMINS = {
@@ -37,7 +47,13 @@ def simple_login_view(request):
     """
     Enhanced login view handling both login and signup forms - EMPLOYEE ONLY INTERFACE
     """
+    # Add CSRF debugging
     if request.method == 'POST':
+        print(f"🔍 POST request received")
+        print(f"🔍 CSRF Token in POST: {request.POST.get('csrfmiddlewaretoken', 'NOT FOUND')}")
+        print(f"🔍 Session Key: {request.session.session_key}")
+        print(f"🔍 Session CSRF Token: {request.session.get('_csrftoken', 'NOT FOUND')}")
+        
         form_type = request.POST.get('form_type', 'login')
         
         # Handle signup form submission

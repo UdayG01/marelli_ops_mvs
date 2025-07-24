@@ -1,0 +1,16 @@
+Revert "fix views.py for triggee"
+
+reverts commit 1d17ef06b87f75f9b79e569d4541e2bbc012180f.
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch revert-changes
+# Changes to be committed:
+#	modified:   ml_api/views.py
+#
+# Untracked files:
+#	.vscode/
+#	TRIGGER_WORKFLOW_IMPLEMENTATION.md
+#	ml_api/templates/ml_api/trigger_inspection.html
+#	test_trigger_workflow.py#

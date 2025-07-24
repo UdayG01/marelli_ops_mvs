@@ -748,111 +748,219 @@
             }
         }
 
-        // NEW: Function to continuously monitor for trigger results in trigger mode
+        // NEW: Trigger count-based detection (MUCH MORE RELIABLE)
         function startTriggerResultPolling() {
             if (!triggerMode) return;
             
-            console.log('🎯 Starting trigger result polling for trigger mode');
+            console.log('🎯 Starting TRIGGER COUNT monitoring for Line 0');
             console.log('🎯 Session start time:', sessionStartTime.toISOString());
             
-            let latestKnownResultTime = null; // Track the latest result we know about
+            let baselineTriggerCount = 0; // Track trigger count baseline
             let initialized = false;
-            let processingResult = false;
+            let processingTrigger = false;
             
-            updateTriggerStatus('⏳ Initializing trigger monitoring...');
-            updateTriggerActivity('Checking for existing triggers to ignore...');
+            updateTriggerStatus('⏳ Initializing trigger count monitoring...');
+            updateTriggerActivity('Getting baseline trigger count...');
             
-            // STEP 1: Get the current latest result as our baseline (ignore anything before/equal to this)
+            // STEP 1: Get current trigger count as baseline (ignore existing triggers)
             const establishBaseline = async () => {
                 try {
-                    const response = await fetch('/api/ml/trigger/recent-results/');
+                    const response = await fetch('/api/ml/camera/trigger/status/');
                     const data = await response.json();
                     
-                    if (data.success && data.results.length > 0) {
-                        const currentLatest = data.results[0];
-                        latestKnownResultTime = new Date(currentLatest.timestamp);
+                    if (data.success) {
+                        baselineTriggerCount = data.trigger_count || 0;
                         
-                        console.log('🎯 BASELINE ESTABLISHED - Ignoring all results at or before:', latestKnownResultTime.toISOString());
-                        console.log('🎯 Current latest result (IGNORED):', currentLatest.image_id);
-                        updateTriggerStatus('✅ Ready - waiting for NEW triggers only');
-                        updateTriggerActivity(`Baseline set: ignoring ${currentLatest.image_id} and older`);
+                        console.log('🎯 BASELINE ESTABLISHED - Current trigger count:', baselineTriggerCount);
+                        console.log('🎯 Will only process NEW triggers beyond count:', baselineTriggerCount);
+                        
+                        updateTriggerStatus('✅ Ready - monitoring Line 0 for NEW triggers');
+                        updateTriggerActivity(`Baseline: ${baselineTriggerCount} triggers (ignoring existing)`);
+                        
+                        initialized = true;
+                        console.log('🎯 Trigger count monitoring READY');
                     } else {
-                        // No existing results - use session start as baseline
-                        latestKnownResultTime = new Date(sessionStartTime.getTime() - 1000); // 1 second before session
-                        console.log('🎯 No existing results - ready for first trigger');
-                        updateTriggerStatus('✅ Ready for first Line 0 trigger');
-                        updateTriggerActivity('No existing triggers - waiting for first event');
+                        console.error('Failed to get trigger status:', data.message);
+                        baselineTriggerCount = 0;
+                        initialized = true;
+                        updateTriggerStatus('⚠️ Ready (no baseline data)');
                     }
-                    
-                    initialized = true;
-                    console.log('🎯 Trigger monitoring FULLY INITIALIZED and ready');
                 } catch (error) {
-                    console.error('Error establishing baseline:', error);
-                    // Fall back to session start time
-                    latestKnownResultTime = new Date(sessionStartTime.getTime() - 1000);
+                    console.error('Error establishing trigger baseline:', error);
+                    baselineTriggerCount = 0;
                     initialized = true;
-                    updateTriggerStatus('⚠️ Ready (with fallback baseline)');
+                    updateTriggerStatus('⚠️ Ready (baseline error)');
                 }
             };
             
             // Establish baseline first
             establishBaseline();
             
-            // STEP 2: Poll for NEW results every second
-            const pollingInterval = setInterval(async () => {
-                if (!triggerMode || processingResult || !initialized) return;
+            // STEP 2: Monitor for NEW HARDWARE triggers by watching trigger COUNT
+            const triggerMonitoringInterval = setInterval(async () => {
+                if (!triggerMode || processingTrigger || !initialized) return;
                 
                 try {
-                    const response = await fetch('/api/ml/trigger/recent-results/');
+                    const response = await fetch('/api/ml/camera/trigger/status/');
                     const data = await response.json();
                     
-                    if (data.success && data.results.length > 0) {
-                        const latestResult = data.results[0];
-                        const resultTime = new Date(latestResult.timestamp);
+                    if (data.success) {
+                        const currentTriggerCount = data.trigger_count || 0;
                         
-                        // ONLY process if this result is NEWER than our known latest
-                        if (resultTime > latestKnownResultTime) {
-                            console.log('🎯 ⚡ NEW TRIGGER DETECTED!');
-                            console.log('🎯 NEW result:', latestResult.image_id, 'at', resultTime.toISOString());
-                            console.log('🎯 Previous latest:', latestKnownResultTime.toISOString());
+                        // CHECK: Has trigger count INCREASED? (NEW hardware trigger detected)
+                        if (currentTriggerCount > baselineTriggerCount) {
+                            const newTriggers = currentTriggerCount - baselineTriggerCount;
                             
-                            // Update our latest known time
-                            latestKnownResultTime = resultTime;
-                            processingResult = true;
+                            console.log('🎯 ⚡ NEW HARDWARE TRIGGER DETECTED!');
+                            console.log(`🎯 Trigger count increased: ${baselineTriggerCount} → ${currentTriggerCount}`);
+                            console.log(`🎯 New triggers: ${newTriggers}`);
+                            
+                            // Update baseline to current count
+                            baselineTriggerCount = currentTriggerCount;
+                            processingTrigger = true;
+                            
+                            // Stop monitoring while processing
+                            clearInterval(triggerMonitoringInterval);
                             
                             // Update status indicators
-                            updateTriggerStatus('⚡ NEW TRIGGER! Processing...');
-                            updateTriggerActivity(`Processing NEW trigger: ${latestResult.image_id}`);
+                            updateTriggerStatus(`⚡ HARDWARE TRIGGER #${currentTriggerCount}! Processing...`);
+                            updateTriggerActivity(`Line 0 trigger detected - capturing image...`);
                             
                             // Show notification
-                            showNotification(`🎯 NEW Line 0 trigger! Processing ${latestResult.image_id}...`, 'info');
+                            showNotification(`🎯 Line 0 Hardware Trigger #${currentTriggerCount} detected! Capturing...`, 'info');
                             
                             // Show processing overlay
                             document.getElementById('processingOverlay').style.display = 'flex';
-                            document.getElementById('processingMessage').textContent = `Processing NEW triggered image: ${latestResult.image_id}`;
+                            document.getElementById('processingMessage').textContent = `Processing hardware trigger #${currentTriggerCount}...`;
                             
-                            // Wait for processing and redirect
-                            setTimeout(() => {
-                                console.log('🎯 Redirecting to results for NEW trigger:', latestResult.image_id);
-                                clearInterval(pollingInterval);
-                                window.location.href = `/api/ml/results/?image_id=${latestResult.image_id}`;
-                            }, 3000);
+                            // Wait for the triggered image to be processed and get results
+                            await waitForTriggerProcessingCompletion(currentTriggerCount);
+                            
                         } else {
                             // No new triggers - just update status silently
-                            updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
+                            updateTriggerStatus(`✅ Monitoring Line 0 - Triggers: ${currentTriggerCount}`);
                         }
                     } else {
-                        // No results - update status
-                        updateTriggerStatus('✅ Monitoring - waiting for Line 0 signal');
+                        updateTriggerStatus('⚠️ Status check failed - retrying...');
                     }
+                    
                 } catch (error) {
-                    console.error('Error polling trigger results:', error);
-                    updateTriggerStatus('⚠️ Polling error - retrying...');
+                    console.error('Error monitoring triggers:', error);
+                    updateTriggerStatus('⚠️ Monitoring error - retrying...');
                 }
-            }, 1000);
+            }, 500); // Check every 500ms for responsive trigger detection
             
             // Store interval ID for cleanup
-            window.triggerPollingInterval = pollingInterval;
+            window.triggerMonitoringInterval = triggerMonitoringInterval;
+        }
+
+        // NEW: Function to wait for trigger processing completion and get results
+        async function waitForTriggerProcessingCompletion(triggerNumber) {
+            console.log(`🎯 Waiting for trigger #${triggerNumber} processing completion...`);
+            
+            const maxWaitTime = 30000; // 30 seconds max wait
+            const startTime = Date.now();
+            
+            const checkForResults = async () => {
+                try {
+                    // Check if we have a processing result for this trigger number
+                    const statusResponse = await fetch('/api/ml/camera/trigger/status/');
+                    const statusData = await statusResponse.json();
+                    
+                    if (statusData.success && statusData.latest_processing) {
+                        const processing = statusData.latest_processing;
+                        
+                        // Check if this result matches our trigger number
+                        if (processing.trigger_count >= triggerNumber && processing.database_id) {
+                            console.log(`🎯 ✅ Trigger #${triggerNumber} processing completed: ${processing.image_id}`);
+                            
+                            // Update processing message
+                            document.getElementById('processingMessage').textContent = 'Processing completed successfully!';
+                            
+                            // Show completion notification
+                            const status = processing.overall_result === 'PASS' ? '✅ PASS' : '❌ FAIL';
+                            showNotification(`🎯 Trigger #${triggerNumber} completed: ${status} (${processing.present_count}/4 nuts)`, 
+                                           processing.overall_result === 'PASS' ? 'success' : 'error');
+                            
+                            // Wait a moment then redirect to results
+                            setTimeout(() => {
+                                console.log(`🎯 Redirecting to results: ${processing.image_id}`);
+                                window.location.href = `/api/ml/results/?image_id=${processing.image_id}`;
+                            }, 1500);
+                            
+                            return; // Processing complete
+                        }
+                    }
+                    
+                    // Also check recent results API as fallback
+                    const resultsResponse = await fetch('/api/ml/trigger/recent-results/');
+                    const resultsData = await resultsResponse.json();
+                    
+                    if (resultsData.success && resultsData.results.length > 0) {
+                        const recentResults = resultsData.results.filter(result => {
+                            const resultTime = new Date(result.timestamp);
+                            return resultTime.getTime() > sessionStartTime.getTime(); // After session start
+                        });
+                        
+                        if (recentResults.length > 0) {
+                            const latestResult = recentResults[0];
+                            
+                            console.log(`🎯 ✅ Trigger processing completed (fallback): ${latestResult.image_id}`);
+                            
+                            // Update processing message
+                            document.getElementById('processingMessage').textContent = 'Processing completed successfully!';
+                            
+                            // Show completion notification
+                            const status = latestResult.overall_result === 'PASS' ? '✅ PASS' : '❌ FAIL';
+                            showNotification(`🎯 Trigger #${triggerNumber} completed: ${status}`, 
+                                           latestResult.overall_result === 'PASS' ? 'success' : 'error');
+                            
+                            // Wait a moment then redirect to results
+                            setTimeout(() => {
+                                console.log(`🎯 Redirecting to results: ${latestResult.image_id}`);
+                                window.location.href = `/api/ml/results/?image_id=${latestResult.image_id}`;
+                            }, 1500);
+                            
+                            return; // Processing complete
+                        }
+                    }
+                    
+                    // Check if we've exceeded max wait time
+                    if (Date.now() - startTime > maxWaitTime) {
+                        console.error('Timeout waiting for trigger processing');
+                        document.getElementById('processingOverlay').style.display = 'none';
+                        showNotification(`Timeout waiting for trigger #${triggerNumber} processing`, 'error');
+                        
+                        // Restart monitoring
+                        setTimeout(() => {
+                            startTriggerResultPolling();
+                        }, 2000);
+                        return;
+                    }
+                    
+                    // Continue waiting
+                    setTimeout(checkForResults, 1000);
+                    
+                } catch (error) {
+                    console.error('Error checking trigger results:', error);
+                    
+                    // Retry or timeout
+                    if (Date.now() - startTime < maxWaitTime) {
+                        setTimeout(checkForResults, 2000);
+                    } else {
+                        document.getElementById('processingOverlay').style.display = 'none';
+                        showNotification(`Error checking trigger #${triggerNumber} results`, 'error');
+                        
+                        // Restart monitoring
+                        setTimeout(() => {
+                            startTriggerResultPolling();
+                        }, 2000);
+                    }
+                }
+            };
+            
+            // Start checking for results
+            checkForResults();
         }
 
         // NEW: Function to wait for camera connection before enabling trigger mode
